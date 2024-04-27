@@ -80,5 +80,10 @@ stm32_err_t stm32_crc_wrapper(const stm32_t *stm, uint32_t address,
 			      uint32_t length, uint32_t *crc);
 uint32_t stm32_sw_crc(uint32_t crc, uint8_t *buf, unsigned int len);
 
+/**
+ * try reset chip by DTR - should be connect to NRST
+*/
+void stm32_hard_reset(const stm32_t *stm);
+
 #endif
 

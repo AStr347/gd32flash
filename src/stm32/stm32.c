@@ -304,7 +304,7 @@ static stm32_err_t stm32_send_init_seq(const stm32_t *stm)
 		return STM32_ERR_OK;
 	}
 	if (p_err != PORT_ERR_TIMEDOUT) {
-		fprintf(stderr, "Failed to init device.\n");
+		fprintf(stderr, "Failed to init device. %d\n", __LINE__);
 		return STM32_ERR_UNKNOWN;
 	}
 
@@ -320,7 +320,7 @@ static stm32_err_t stm32_send_init_seq(const stm32_t *stm)
 	p_err = port->read(port, &byte, 1);
 	if (p_err == PORT_ERR_OK && byte == STM32_NACK)
 		return STM32_ERR_OK;
-	fprintf(stderr, "Failed to init device.\n");
+	fprintf(stderr, "Failed to init device. %d %d %d\n", __LINE__, p_err, byte);
 	return STM32_ERR_UNKNOWN;
 }
 
@@ -339,7 +339,7 @@ stm32_t *stm32_init(struct port_interface *port, const char init)
 	stm->cmd = malloc(sizeof(stm32_cmd_t));
 	memset(stm->cmd, STM32_CMD_ERR, sizeof(stm32_cmd_t));
 	stm->port = port;
-
+	stm32_hard_reset(stm);
 	if ((port->flags & PORT_CMD_INIT) && init)
 		if (stm32_send_init_seq(stm) != STM32_ERR_OK)
 			return NULL;
@@ -477,6 +477,7 @@ stm32_t *stm32_init(struct port_interface *port, const char init)
 
 void stm32_close(stm32_t *stm)
 {
+	stm32_hard_reset(stm);
 	if (stm)
 		free(stm->cmd);
 	free(stm);
@@ -540,8 +541,8 @@ stm32_err_t stm32_write_memory(const stm32_t *stm, uint32_t address,
 	}
 
 	/* must be 32bit aligned */
-	if (address & 0x3 || len & 0x3) {
-		fprintf(stderr, "Error: WRITE address and length must be 4 byte aligned\n");
+	if (address & 0x3) {
+		fprintf(stderr, "Error: WRITE address must be 4 byte aligned\n");
 		return STM32_ERR_UNKNOWN;
 	}
 
@@ -1045,4 +1046,17 @@ stm32_err_t stm32_crc_wrapper(const stm32_t *stm, uint32_t address,
 	fprintf(stderr, "Done.\n");
 	*crc = current_crc;
 	return STM32_ERR_OK;
+}
+
+/**
+ * try reset chip by DTR - should be connect to NRST
+*/
+void stm32_hard_reset(const stm32_t *stm)
+{
+	struct port_interface* port = stm->port;
+	fprintf(stdout, "hard reset chip by DTR leg (should be connect to NRST)\n");
+
+	port->gpio(port, GPIO_DTR, 0);
+	usleep(10000);
+	port->gpio(port, GPIO_DTR, 1);
 }

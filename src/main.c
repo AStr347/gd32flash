@@ -32,11 +32,11 @@
 #include "utils.h"
 #include "serial.h"
 #include "stm32.h"
-#include "parsers/parser.h"
+#include "parser.h"
 #include "port.h"
 
-#include "parsers/binary.h"
-#include "parsers/hex.h"
+#include "binary.h"
+#include "hex.h"
 
 #define VERSION "0.4"
 
@@ -49,7 +49,7 @@ parser_t	*parser		= NULL;
 /* settings */
 struct port_options port_opts = {
 	.device			= NULL,
-	.baudRate		= SERIAL_BAUD_57600,
+	.baudRate		= SERIAL_BAUD_256000,
 	.serial_mode		= "8e1",
 	.bus_addr		= 0,
 	.rx_frame_max		= STM32_MAX_RX_FRAME,
@@ -381,7 +381,7 @@ int main(int argc, char* argv[]) {
 			uint32_t left	= end - addr;
 			len		= max_wlen > left ? left : max_wlen;
 			len		= len > size - offset ? size - offset : len;
-
+			memset(buffer, 00, sizeof(buffer));
 			if (parser->read(p_st, buffer, &len) != PARSER_ERR_OK)
 				goto close;
 
